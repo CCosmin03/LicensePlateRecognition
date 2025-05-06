@@ -1,0 +1,3 @@
+C:/Users/colde/OneDrive/Desktop/UTCN/An3Sem2/PI/Project/cmake-build-debug/CMakeFiles/Project.dir
+C:/Users/colde/OneDrive/Desktop/UTCN/An3Sem2/PI/Project/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/colde/OneDrive/Desktop/UTCN/An3Sem2/PI/Project/cmake-build-debug/CMakeFiles/rebuild_cache.dir
