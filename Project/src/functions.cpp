@@ -6,9 +6,6 @@
 using namespace cv;
 using namespace std;
 
-const double PI = 3.14159265358979323846;
-
-
 Mat myGaussianBlur(const Mat& src, int kernelSize, double sigma) {
     CV_Assert(src.type() == CV_8UC1);
 
@@ -19,7 +16,7 @@ Mat myGaussianBlur(const Mat& src, int kernelSize, double sigma) {
 
     for (int i = -k; i <= k; i++) {
         for (int j = -k; j <= k; j++) {
-            double value = exp(-(i * i + j * j) / (2 * sigma * sigma)) / (2 * PI * sigma * sigma);
+            double value = exp(-(i * i + j * j) / (2 * sigma * sigma)) / (2 * CV_PI * sigma * sigma);
             kernel[i + k][j + k] = value;
             sum += value;
         }
@@ -44,7 +41,6 @@ Mat myGaussianBlur(const Mat& src, int kernelSize, double sigma) {
 }
 
 
-
 Mat myThreshold(const Mat& src, int thresh) {
     CV_Assert(src.type() == CV_8UC1);
     Mat dst = src.clone();
@@ -57,10 +53,100 @@ Mat myThreshold(const Mat& src, int thresh) {
     return dst;
 }
 
-Mat myCannyEdgeDetection(const Mat& gray, double lowThreshold, double highThreshold) {
+Mat myCannyEdgeDetectionOpenCV(const Mat& gray, double lowThreshold, double highThreshold) {
     Mat edges;
     Canny(gray, edges, lowThreshold, highThreshold);
     return edges;
+}
+
+int sobelX[3][3] = {
+    {-1, 0, 1},
+    {-2, 0, 2},
+    {-1, 0, 1}
+};
+int sobelY[3][3] = {
+    {-1, -2, -1},
+    {0, 0, 0},
+    {1, 2, 1}
+};
+
+Mat myCannyEdgeDetection(const Mat& gray, double lowThreshold, double highThreshold) {
+    CV_Assert(gray.type() == CV_8UC1);
+    int rows = gray.rows;
+    int cols = gray.cols;
+
+    // Gradient Magnitude si Direction
+    Mat magnitude = Mat::zeros(rows, cols, CV_32FC1);
+    Mat direction = Mat::zeros(rows, cols, CV_32FC1);
+
+    for (int y = 1; y < rows - 1; y++) {
+        for (int x = 1; x < cols - 1; x++) {
+            float gx = 0, gy = 0;
+            for (int i = -1; i <= 1; i++) {
+                for (int j = -1; j <= 1; j++) {
+                    int pixel = gray.at<uchar>(y + i, x + j);
+                    gx += pixel * sobelX[i + 1][j + 1];
+                    gy += pixel * sobelY[i + 1][j + 1];
+                }
+            }
+            magnitude.at<float>(y, x) = sqrt(gx * gx + gy * gy);
+            direction.at<float>(y, x) = atan2(gy, gx) * 180 / CV_PI;
+            if (direction.at<float>(y, x) < 0)
+                direction.at<float>(y, x) += 180;
+        }
+    }
+
+    // Non-Maximum Suppression
+    Mat nms = Mat::zeros(rows, cols, CV_32FC1);
+    for (int y = 1; y < rows - 1; y++) {
+        for (int x = 1; x < cols - 1; x++) {
+            float angle = direction.at<float>(y, x);
+            float mag = magnitude.at<float>(y, x);
+            float q = 0, r = 0;
+
+            if ((angle >= 0 && angle < 22.5) || (angle >= 157.5 && angle <= 180)) {
+                q = magnitude.at<float>(y, x + 1);
+                r = magnitude.at<float>(y, x - 1);
+            } else if (angle >= 22.5 && angle < 67.5) {
+                q = magnitude.at<float>(y + 1, x - 1);
+                r = magnitude.at<float>(y - 1, x + 1);
+            } else if (angle >= 67.5 && angle < 112.5) {
+                q = magnitude.at<float>(y + 1, x);
+                r = magnitude.at<float>(y - 1, x);
+            } else if (angle >= 112.5 && angle < 157.5) {
+                q = magnitude.at<float>(y - 1, x - 1);
+                r = magnitude.at<float>(y + 1, x + 1);
+            }
+
+            if (mag >= q && mag >= r)
+                nms.at<float>(y, x) = mag;
+            else
+                nms.at<float>(y, x) = 0;
+        }
+    }
+
+    // Hysteresis Thresholding
+    Mat result = Mat::zeros(rows, cols, CV_8UC1);
+    for (int y = 1; y < rows - 1; y++) {
+        for (int x = 1; x < cols - 1; x++) {
+            float val = nms.at<float>(y, x);
+            if (val >= highThreshold) {
+                result.at<uchar>(y, x) = 255;
+            } else if (val >= lowThreshold) {
+                for (int i = -1; i <= 1; i++) {
+                    for (int j = -1; j <= 1; j++) {
+                        if (nms.at<float>(y + i, x + j) >= highThreshold) {
+                            result.at<uchar>(y, x) = 255;
+                            goto break_loop;
+                        }
+                    }
+                }
+                break_loop:;
+            }
+        }
+    }
+
+    return result;
 }
 
 cv::Mat myDilation(const cv::Mat& src, int kernelSize, int iterations) {
@@ -161,9 +247,9 @@ cv::Rect groupLettersIntoPlate(const std::vector<cv::Rect>& letterRects, cv::Mat
         return cv::Rect();
     }
 
-    const int radius = 150;
-    const int minLetters = 5;
-    const int maxLetters = 8;
+    const int radius = 100;
+    const int minLetters = 6;
+    const int maxLetters = 9;
     const float minRatio = 2.5f;
     const float maxRatio = 5.5f;
 

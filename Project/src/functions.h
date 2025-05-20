@@ -11,6 +11,7 @@
 cv::Mat myGaussianBlur(const cv::Mat& src, int kernelSize, double sigma);
 cv::Mat myThreshold(const cv::Mat& src, int thresh);
 cv::Mat myCannyEdgeDetection(const cv::Mat& gray, double lowThreshold, double highThreshold);
+cv::Mat myCannyEdgeDetectionOpenCV(const cv::Mat& gray, double lowThreshold, double highThreshold);
 std::vector<cv::Rect> detectLetters(const cv::Mat& processed, cv::Mat& output);
 cv::Rect groupLettersIntoPlate(const std::vector<cv::Rect>& letterRects, cv::Mat& output);
 cv::Rect detectPlateContour(const cv::Mat& processed, cv::Mat& output);
