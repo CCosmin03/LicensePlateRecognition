@@ -6,11 +6,13 @@ using namespace std;
 
 int main() {
 
-    Mat image = imread("C:/Users/colde/OneDrive/Desktop/UTCN/An3Sem2/PI/ImageProcessingProject/Project/images/car1.jpg");
+    Mat image = imread("C:/Users/colde/OneDrive/Desktop/UTCN/An3Sem2/PI/ImageProcessingProject/Project/images/car20.jpg");
     if (image.empty()) {
         cout << "Imaginea nu a putut fi incarcata." << endl;
         return -1;
     }
+
+    double t0 = cv::getTickCount();
 
     //Convertim la grayscale
     Mat gray;
@@ -22,7 +24,7 @@ int main() {
     //imshow("Gaussian Blurred", blurred);
 
     //Threshold
-    Mat binary = myThreshold(blurred, 100);  // pragul poate fi ajustat
+    Mat binary = myThreshold(blurred, 130);  // pragul poate fi ajustat
     //imshow("Binary Image", binary);
 
     //Canny (pe imagine binara)
@@ -45,6 +47,10 @@ int main() {
         vector<Rect> letterRects = detectLetters(cannyEdges, output);  // tot pe cannyEdges pentru litere
         Rect plateByLetters = groupLettersIntoPlate(letterRects, output);
     }
+    double t1 = cv::getTickCount();
+    double elapsedMs = (t1 - t0) / cv::getTickFrequency() * 1000.0;
+
+    std::cout << "Timp de executie: " << elapsedMs << " ms" << std::endl;
 
     //Afisam rezultatul final
     imshow("Detected Plate", output);
